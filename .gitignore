@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Package lock file
+package-lock.json
+
+# Other common ignores
+.DS_Store
+*.log
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+

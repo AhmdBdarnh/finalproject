@@ -1,0 +1,83 @@
+services:
+  fastapi:
+    build: .
+    command: uvicorn crud.handler:app --host 0.0.0.0 --port 8000 --reload  # Run FastAPI app
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"  # Expose port 8000 for FastAPI
+    networks:
+      - mynetwork
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - DB_HOST=db
+      - DB_USER=user  # Use the correct user that exists
+      - DB_PASSWORD=password
+      - DB_NAME=music_db
+      - SQS_ENDPOINT=http://sqs:9324
+    command: sh -c "serverless offline --host 0.0.0.0"
+    depends_on:
+      - db
+      - sqs
+    networks:
+      - mynetwork
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=user  # Use the same user in the application
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=music_db
+      - POSTGRES_HOST=db
+
+      
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d music_db"]  # Use correct credentials
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mynetwork
+
+  sqs:
+    image: softwaremill/elasticmq
+    ports:
+      - "9324:9324"
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+    command: -Dconfig.file=/opt/elasticmq.conf
+    environment:
+      AWS_REGION: us-west-2
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://sqs:9324"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mynetwork
+
+volumes:
+  postgres_data:
+  sqs_data:
+
+networks:
+  mynetwork:
+    driver: bridge

@@ -1,0 +1,213 @@
+{
+  "unknown": {
+    "versionSfCore": null,
+    "versionFramework": "4.2.4",
+    "isWithinCompose": false,
+    "composeOrgName": null,
+    "composeServiceName": null,
+    "command": [],
+    "options": {
+      "version": true
+    },
+    "error": null,
+    "machineId": "798419c70c29e380c5815111b30c1117",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  },
+  "/app": {
+    "versionSfCore": null,
+    "versionFramework": "4.2.4",
+    "isWithinCompose": false,
+    "isCompose": false,
+    "composeOrgName": null,
+    "composeServiceName": null,
+    "servicePath": "/app",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "services": {
+        "pipeline": {
+          "build": {
+            "context": ".",
+            "dockerfile": "Dockerfile.serverless"
+          },
+          "volumes": [
+            ".:/app",
+            "/app/node_modules"
+          ],
+          "ports": [
+            "3000:3000"
+          ],
+          "environment": [
+            "AWS_ACCESS_KEY_ID=test",
+            "AWS_SECRET_ACCESS_KEY=test"
+          ],
+          "command": "npm start"
+        },
+        "db": {
+          "image": "postgres:13",
+          "environment": [
+            "POSTGRES_USER=user",
+            "POSTGRES_PASSWORD=password",
+            "POSTGRES_DB=songdb"
+          ],
+          "volumes": [
+            "postgres_data:/var/lib/postgresql/data"
+          ]
+        },
+        "sqs": {
+          "image": "softwaremill/elasticmq",
+          "ports": [
+            "9324:9324",
+            "9325:9325"
+          ]
+        }
+      },
+      "volumes": {
+        "postgres_data": null
+      }
+    },
+    "serviceRawFile": "\r\nservices:\r\n  pipeline:\r\n    build:\r\n      context: .\r\n      dockerfile: Dockerfile.serverless\r\n    volumes:\r\n      - .:/app\r\n      - /app/node_modules\r\n    ports:\r\n      - \"3000:3000\"\r\n    environment:\r\n      - AWS_ACCESS_KEY_ID=test\r\n      - AWS_SECRET_ACCESS_KEY=test\r\n    command: npm start\r\n\r\n  db:\r\n    image: postgres:13\r\n    environment:\r\n      - POSTGRES_USER=user\r\n      - POSTGRES_PASSWORD=password\r\n      - POSTGRES_DB=songdb\r\n    volumes:\r\n      - postgres_data:/var/lib/postgresql/data\r\n\r\n  sqs:\r\n    image: softwaremill/elasticmq\r\n    ports:\r\n      - \"9324:9324\"\r\n      - \"9325:9325\"\r\n\r\nvolumes:\r\n  postgres_data:",
+    "command": [
+      "print"
+    ],
+    "options": {},
+    "error": {
+      "message": "You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".",
+      "stack": "Error: You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".\n    at Authentication.getAuthenticatedData (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:940:10542)\n    at async Authentication.resolverAuthenticate (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:942:20540)\n    at async _Meta.authenticateAndResolve (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:950:11261)\n    at async route (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:950:16849)\n    at async Object.run2 [as run] (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:950:17334)\n    at async run3 (file:///root/.serverless/releases/4.2.4/package/dist/sf-core.js:950:18594)"
+    },
+    "machineId": "798419c70c29e380c5815111b30c1117",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  },
+  "C:\\Users\\amin\\Desktop\\ksa-pipeline--3\\ksa-pipeline": {
+    "versionSfCore": null,
+    "versionFramework": "4.2.4",
+    "isWithinCompose": false,
+    "isCompose": false,
+    "composeOrgName": null,
+    "composeServiceName": null,
+    "servicePath": "C:\\Users\\amin\\Desktop\\ksa-pipeline--3\\ksa-pipeline",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "youtube-trending-service",
+      "plugins": [
+        "serverless-offline",
+        "serverless-offline-sqs",
+        "serverless-python-requirements"
+      ],
+      "provider": {
+        "name": "aws",
+        "runtime": "python3.8",
+        "stage": "dev",
+        "region": "us-west-2",
+        "environment": {
+          "SQS_QUEUE_URL": "${self:custom.sqsQueueUrl.${self:provider.stage}}",
+          "DATA_FILE_PATH": "/tmp/data.json"
+        },
+        "iamRoleStatements": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:ReceiveMessage",
+              "sqs:DeleteMessage",
+              "sqs:GetQueueAttributes"
+            ],
+            "Resource": "arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:custom.sqsQueueName}"
+          }
+        ]
+      },
+      "functions": {
+        "scrapeYoutubeTrending": {
+          "handler": "scrapers/scraper1.lambda_handler",
+          "events": [
+            {
+              "schedule": "rate(3 minutes)"
+            },
+            {
+              "http": {
+                "path": "scrape",
+                "method": "get"
+              }
+            }
+          ],
+          "timeout": 120
+        },
+        "processMessages": {
+          "handler": "processor/handler.lambda_handler",
+          "events": [
+            {
+              "sqs": {
+                "arn": "arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:custom.sqsQueueName}",
+                "batchSize": 1
+              }
+            }
+          ]
+        }
+      },
+      "resources": {
+        "Resources": {
+          "SQSQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+              "QueueName": "${self:custom.sqsQueueName}"
+            }
+          }
+        }
+      },
+      "custom": {
+        "sqsQueueName": "${self:service}-${self:provider.stage}-records-sqs",
+        "sqsQueueUrl": {
+          "dev": "http://localhost:9324/queue/${self:custom.sqsQueueName}",
+          "prod": "https://sqs.${self:provider.region}.amazonaws.com/${aws:accountId}/${self:custom.sqsQueueName}"
+        },
+        "serverless-offline-sqs": {
+          "autoCreate": true,
+          "apiVersion": "2012-11-05",
+          "endpoint": "http://localhost:9324",
+          "region": "${self:provider.region}",
+          "accessKeyId": "<REDACTED>",
+          "secretAccessKey": "<REDACTED>",
+          "skipCacheInvalidation": false
+        },
+        "pythonRequirements": {
+          "dockerizePip": true,
+          "noDeploy": []
+        }
+      },
+      "package": {
+        "individually": true,
+        "exclude": [
+          "node_modules/**",
+          "venv/**"
+        ],
+        "include": [
+          "scrapers/**",
+          "processor/**"
+        ]
+      }
+    },
+    "serviceRawFile": "service: youtube-trending-service\r\n\r\nplugins:\r\n  - serverless-offline\r\n  - serverless-offline-sqs\r\n  - serverless-python-requirements\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: python3.8\r\n  stage: ${opt:stage, 'dev'}\r\n  region: ${opt:region, 'us-west-2'}\r\n  environment:\r\n    SQS_QUEUE_URL: ${self:custom.sqsQueueUrl.${self:provider.stage}}\r\n    DATA_FILE_PATH: '/tmp/data.json'  # Adjust this path as needed\r\n  iamRoleStatements:\r\n    - Effect: Allow\r\n      Action:\r\n        - sqs:SendMessage\r\n        - sqs:ReceiveMessage\r\n        - sqs:DeleteMessage\r\n        - sqs:GetQueueAttributes\r\n      Resource: arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:custom.sqsQueueName}\r\n\r\nfunctions:\r\n  scrapeYoutubeTrending:\r\n    handler: scrapers/scraper1.lambda_handler\r\n    events:\r\n      - schedule: rate(3 minutes)  # Runs every 3 minutes\r\n      - http:\r\n          path: scrape\r\n          method: get\r\n    timeout: 120  # Increase timeout for this function to 120 seconds\r\n\r\n  processMessages:\r\n    handler: processor/handler.lambda_handler\r\n    events:\r\n      - sqs:\r\n          arn: arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:custom.sqsQueueName}\r\n          batchSize: 1\r\n\r\nresources:\r\n  Resources:\r\n    SQSQueue:\r\n      Type: AWS::SQS::Queue\r\n      Properties:\r\n        QueueName: ${self:custom.sqsQueueName}\r\n\r\ncustom:\r\n  sqsQueueName: ${self:service}-${self:provider.stage}-records-sqs\r\n  sqsQueueUrl:\r\n    dev: http://localhost:9324/queue/${self:custom.sqsQueueName}\r\n    prod: https://sqs.${self:provider.region}.amazonaws.com/${aws:accountId}/${self:custom.sqsQueueName}\r\n  serverless-offline-sqs:\r\n    autoCreate: true\r\n    apiVersion: '2012-11-05'\r\n    endpoint: http://localhost:9324\r\n    region: ${self:provider.region}\r\n    accessKeyId: root\r\n    secretAccessKey: root\r\n    skipCacheInvalidation: false\r\n  pythonRequirements:\r\n    dockerizePip: true\r\n    noDeploy: []  # Add any packages you don't want to deploy\r\n\r\npackage:\r\n  individually: true\r\n  exclude:\r\n    - node_modules/**\r\n    - venv/**\r\n  include:\r\n    - scrapers/**\r\n    - processor/**",
+    "command": [
+      "offline",
+      "start"
+    ],
+    "options": {},
+    "error": {
+      "message": "Unauthorized",
+      "stack": "Error: Unauthorized\n    at Authentication.getClientDataFromAccessKey (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:942:17054)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Authentication.getAuthenticatedData (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:942:3687)\n    at async Authentication.resolverAuthenticate (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:942:20540)\n    at async _Meta.authenticateAndResolve (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:950:11261)\n    at async route (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:950:16849)\n    at async Object.run2 [as run] (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:950:17334)\n    at async run3 (file:///C:/Users/amin/.serverless/releases/4.2.4/package/dist/sf-core.js:950:18594)"
+    },
+    "machineId": "6040d605c327e4e3eef0df5f24ae4d97",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

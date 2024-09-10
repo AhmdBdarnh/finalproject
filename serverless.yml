@@ -1,0 +1,100 @@
+service: youtube-trending-service
+
+plugins:
+  - serverless-offline
+  - serverless-offline-sqs
+  - serverless-python-requirements
+  - serverless-offline-sqs-external
+
+custom:
+  serverless-offline-sqs-external:
+    autoCreate: false
+    https: false
+    apiVersion: '2012-11-05'
+    host: sqs
+    port: 9324
+    region: us-west-2
+    accessKeyId: test
+    secretAccessKey: test
+    skipCacheInvalidation: false
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: us-west-2
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "sqs:ReceiveMessage"
+        - "sqs:DeleteMessage"
+        - "sqs:GetQueueAttributes"
+      Resource: "arn:aws:sqs:us-west-2:000000000000:records_sqs"
+
+  environment:
+    POSTGRES_HOST: db
+    POSTGRES_DB: music_db
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: password
+    SQS_QUEUE_URL: http://sqs:9324/000000000000/records_sqs
+    AWS_ACCESS_KEY_ID: test
+    AWS_SECRET_ACCESS_KEY: test
+    AWS_REGION: us-west-2
+
+functions:
+  scraper2:
+    handler: scrapers/scraper2/handler.lambda_handler
+    timeout: 800
+    events:
+      - schedule:
+          rate: rate(10 minutes)
+          enabled: true
+      - http:
+          path: scrape
+          method: get
+
+  scraper1:  # Added scraper1 as a separate function
+    handler: scrapers/scraper1/handler.lambda_handler
+    timeout: 800
+    events:
+      - schedule:
+          rate: rate(15 minutes)
+          enabled: true
+      - http:
+          path: scrape1
+          method: get
+
+  scraper3:  # Added scraper3 as a separate function
+    handler: scrapers/scraper3/handler.lambda_handler
+    timeout: 800
+    events:
+      - schedule:
+          rate: rate(20 minutes)  # Adjust the rate as needed
+          enabled: true
+      - http:
+          path: scrape3
+          method: get
+
+  processor:
+    handler: processor/handler.lambda_handler
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-west-2:000000000000:records_sqs
+          batchSize: 1  # Number of messages to process in a single batch
+      - http:
+          path: process
+          method: get
+    timeout: 800  # Increase timeout if needed
+
+resources:
+  Resources:
+    MySQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: records_sqs
+        VisibilityTimeout: 10  # Timeout in seconds
+        DelaySeconds: 5
+        ReceiveMessageWaitTimeSeconds: 0
+        RedrivePolicy:
+          maxReceiveCount: 100
+          deadLetterQueue:
+            arn: arn:aws:sqs:us-west-2:000000000000:records_sqs_dlq  # Replace with actual ARN
